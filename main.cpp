@@ -27,15 +27,17 @@
 DigitalOut LedGreen(LED1);
 DigitalOut LedBlue(LED2);
 DigitalOut LedRed(LED3);
-DigitalOut LedE(PC_0);
-
-
+DigitalOut LedExt(PC_0);
+InterruptIn button(PD_7);
+InterruptIn rfid(PG_0);
 BufferedSerial     pc(UART_TX, UART_RX, 9600);
-
 MFRC522    RfChip   (SPI_MOSI, SPI_MISO, SPI_SCK, PG_2, MF_RESET);
 
-int main(void) {
+void blinkLED(DigitalOut led);
+void flip(void);
 
+int main(void) {
+    button.rise(&flip);
   // Init. RC522 Chip
   RfChip.PCD_Init();
     pc.set_format(
@@ -43,7 +45,7 @@ int main(void) {
         /* parity */ BufferedSerial::None,
         /* stop bit */ 1
     );
-
+//rfid.rise(&runRFID);
   while (true) {
 
     // Look for new cards
@@ -54,9 +56,7 @@ int main(void) {
     }
     //if new card is present flash light
     else {
-        LedBlue = 1;
-        ThisThread::sleep_for(500ms);
-        LedBlue = 0;
+        blinkLED(LedBlue);
     }
     
 
@@ -70,16 +70,12 @@ int main(void) {
         // Print Card UID
         uint8_t ID[] = {0xe3, 0xdf, 0xa6, 0x2e};
         if(RfChip.uid.uidByte[0] == ID[0] && RfChip.uid.uidByte[1] == ID[1] && RfChip.uid.uidByte[2] == ID[2] && RfChip.uid.uidByte[3] == ID[3]){
-                printf("Card Match! \n");
-                LedGreen = 1;
-                ThisThread::sleep_for(500ms);
-                LedGreen = 0;
+            printf("Card Match! \n");
+            blinkLED(LedGreen);
         }
         else{
             printf("Not Matching Card \n");
-                    LedRed = 1;
-                    ThisThread::sleep_for(500ms);
-                    LedRed = 0;
+            blinkLED(LedRed);
         }
         printf("Card UID: ");
         for (uint8_t i = 0; i < RfChip.uid.size; i++)
@@ -90,4 +86,13 @@ int main(void) {
     }
 
   }
+}
+
+void blinkLED(DigitalOut led){
+    led = 1;
+    ThisThread::sleep_for(500ms);
+    led = 0;
+}
+void flip(void){
+    LedExt = !LedExt;
 }
