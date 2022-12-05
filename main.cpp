@@ -28,23 +28,27 @@ DigitalOut LedGreen(LED1);
 DigitalOut LedBlue(LED2);
 DigitalOut LedRed(LED3);
 DigitalOut LedExt(PC_0);
+DigitalOut Lock(PG_1);
 InterruptIn button(PD_7);
-InterruptIn rfid(PG_0);
+//InterruptIn rfid(PG_0);
 BufferedSerial     pc(UART_TX, UART_RX, 9600);
 MFRC522    RfChip   (SPI_MOSI, SPI_MISO, SPI_SCK, PG_2, MF_RESET);
 
 void blinkLED(DigitalOut led);
 void flip(void);
+//void unlock(void);
+//void lock(void);
 
 int main(void) {
-    button.rise(&flip);
+    button.rise(&flip);  //FIXME replace flip with unlock
   // Init. RC522 Chip
-  RfChip.PCD_Init();
+    RfChip.PCD_Init();
     pc.set_format(
         /* bits */ 8,
         /* parity */ BufferedSerial::None,
         /* stop bit */ 1
     );
+//    lock();
 //rfid.rise(&runRFID);
   while (true) {
 
@@ -71,9 +75,11 @@ int main(void) {
         uint8_t ID[] = {0xe3, 0xdf, 0xa6, 0x2e};
         if(RfChip.uid.uidByte[0] == ID[0] && RfChip.uid.uidByte[1] == ID[1] && RfChip.uid.uidByte[2] == ID[2] && RfChip.uid.uidByte[3] == ID[3]){
             printf("Card Match! \n");
+       //     unlock();
             blinkLED(LedGreen);
         }
         else{
+     //       lock();
             printf("Not Matching Card \n");
             blinkLED(LedRed);
         }
@@ -95,4 +101,13 @@ void blinkLED(DigitalOut led){
 }
 void flip(void){
     LedExt = !LedExt;
+}
+
+void unlock(void){
+    Lock = 1;
+    ThisThread::sleep_for(5000ms);
+    Lock = 0;
+}
+void lock(void){
+    Lock = 0;
 }
