@@ -104,10 +104,10 @@ void flip(void){
 }
 
 void unlock(void){
-    Lock = 1;
-    ThisThread::sleep_for(5000ms);
     Lock = 0;
+    ThisThread::sleep_for(5000ms);
+    Lock = 1;
 }
 void lock(void){
-    Lock = 0;
+    Lock = 1;
 }
