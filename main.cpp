@@ -36,8 +36,8 @@ MFRC522    RfChip   (SPI_MOSI, SPI_MISO, SPI_SCK, PG_2, MF_RESET);
 
 void blinkLED(DigitalOut led);
 void flip(void);
-//void unlock(void);
-//void lock(void);
+void unlock(void);
+void lock(void);
 
 int main(void) {
     button.rise(&flip);  //FIXME replace flip with unlock
