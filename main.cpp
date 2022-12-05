@@ -27,8 +27,7 @@
 DigitalOut LedGreen(LED1);
 DigitalOut LedBlue(LED2);
 DigitalOut LedRed(LED3);
-DigitalOut LedExt(PC_0);
-DigitalOut Lock(PG_1);
+DigitalOut Lock(PC_0);
 InterruptIn button(PD_7);
 //InterruptIn rfid(PG_0);
 BufferedSerial     pc(UART_TX, UART_RX, 9600);
@@ -38,9 +37,11 @@ void blinkLED(DigitalOut led);
 void flip(void);
 void unlock(void);
 void lock(void);
+void TIM2_Config();
+void delayMs(int n);
 
 int main(void) {
-    button.rise(&flip);  //FIXME replace flip with unlock
+    button.rise(&unlock);  //FIXME replace flip with unlock
   // Init. RC522 Chip
     RfChip.PCD_Init();
     pc.set_format(
@@ -48,8 +49,8 @@ int main(void) {
         /* parity */ BufferedSerial::None,
         /* stop bit */ 1
     );
-//    lock();
-//rfid.rise(&runRFID);
+    TIM2_Config();
+    lock();
   while (true) {
 
     // Look for new cards
@@ -75,11 +76,11 @@ int main(void) {
         uint8_t ID[] = {0xe3, 0xdf, 0xa6, 0x2e};
         if(RfChip.uid.uidByte[0] == ID[0] && RfChip.uid.uidByte[1] == ID[1] && RfChip.uid.uidByte[2] == ID[2] && RfChip.uid.uidByte[3] == ID[3]){
             printf("Card Match! \n");
-       //     unlock();
+            unlock();
             blinkLED(LedGreen);
         }
         else{
-     //       lock();
+            lock();
             printf("Not Matching Card \n");
             blinkLED(LedRed);
         }
@@ -99,15 +100,30 @@ void blinkLED(DigitalOut led){
     ThisThread::sleep_for(500ms);
     led = 0;
 }
-void flip(void){
-    LedExt = !LedExt;
-}
 
 void unlock(void){
     Lock = 0;
-    ThisThread::sleep_for(5000ms);
+    delayMs(50);
     Lock = 1;
 }
 void lock(void){
     Lock = 1;
+    ThisThread::sleep_for(50ms);
+}
+
+
+void delayMs(int n){
+	while(n > 0){
+		while(!(TIM2->SR & 1)) {};
+		TIM2->SR &= ~1;
+		n--;
+	}
+}
+void TIM2_Config(){
+	//configure TIM2 to wrap around at 1Hz
+	RCC->APB1ENR |= 1;			//enable TIM2 clock
+	TIM2->PSC = 1600 - 1;   //divided by 1600
+	TIM2->ARR = 10 - 1;			//divided by 10 = 1kHz
+	TIM2->CNT = 0;					//clear counter
+	TIM2->CR1 = 1;					//enable TIM2
 }
